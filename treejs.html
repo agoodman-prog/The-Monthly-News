@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Three.js Christmas Tree</title>
+  <style>
+    body { margin: 0; overflow: hidden; background: #000; }
+  </style>
+</head>
+<body>
+  <script type="module">
+    import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
+    import { OrbitControls } from 'https://unpkg.com/three@0.160.0/examples/jsm/controls/OrbitControls.js?module';
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x000000);
+
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(0, 4, 10);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    // Controls
+    const controls = new OrbitControls(camera, renderer.domElement);
+
+    // Tree Group
+    const tree = new THREE.Group();
+
+    function createLayer(radius, height, y) {
+      const geometry = new THREE.ConeGeometry(radius, height, 32);
+      const material = new THREE.MeshStandardMaterial({ color: 0x0a5c0a });
+      const layer = new THREE.Mesh(geometry, material);
+      layer.position.y = y;
+      return layer;
+    }
+
+    tree.add(createLayer(2.2, 2.5, 0));
+    tree.add(createLayer(1.7, 2.2, 1.5));
+    tree.add(createLayer(1.2, 1.8, 2.8));
+    tree.add(createLayer(0.7, 1.4, 3.8));
+
+    const trunkGeo = new THREE.CylinderGeometry(0.4, 0.4, 1.2, 16);
+    const trunkMat = new THREE.MeshStandardMaterial({ color: 0x8b4513 });
+    const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+    trunk.position.y = -1.2;
+    tree.add(trunk);
+
+    // Star
+    const starGeo = new THREE.OctahedronGeometry(0.35, 0);
+    const starMat = new THREE.MeshBasicMaterial({ color: 0xffff66 });
+    const star = new THREE.Mesh(starGeo, starMat);
+    star.position.y = 4.8;
+    tree.add(star);
+
+    // Star glow
+    const glow = new THREE.PointLight(0xffffaa, 2, 10);
+    glow.position.set(0, 4.8, 0);
+    tree.add(glow);
+
+    scene.add(tree);
+
+    // Ornaments
+    const colors = [0xff4444, 0x44aaff, 0xffdd44, 0xff66ff];
+
+    for (let i = 0; i < 35; i++) {
+      const orbGeo = new THREE.SphereGeometry(0.12, 16, 16);
+      const orbMat = new THREE.MeshStandardMaterial({ color: colors[Math.floor(Math.random() * colors.length)] });
+      const orb = new THREE.Mesh(orbGeo, orbMat);
+
+      const layerY = Math.random() * 3.5;
+      const radius = 2 - (layerY * 0.5);
+      const angle = Math.random() * Math.PI * 2;
+
+      orb.position.set(Math.cos(angle) * radius, layerY, Math.sin(angle) * radius);
+      tree.add(orb);
+    }
+
+    // Snow
+    const snowGeo = new THREE.BufferGeometry();
+    const snowCount = 400;
+    const posArray = new Float32Array(snowCount * 3);
+
+    for (let i = 0; i < snowCount * 3; i++) {
+      posArray[i] = (Math.random() - 0.5) * 40;
+    }
+
+    snowGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+
+    const snowMat = new THREE.PointsMaterial({ size: 0.12 });
+    const snow = new THREE.Points(snowGeo, snowMat);
+    scene.add(snow);
+
+    // Lights
+    const ambient = new THREE.AmbientLight(0xffffff, 0.4);
+    scene.add(ambient);
+
+    const dir = new THREE.DirectionalLight(0xffffff, 0.7);
+    dir.position.set(5, 10, 7);
+    scene.add(dir);
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      const positions = snow.geometry.attributes.position.array;
+      for (let i = 1; i < positions.length; i += 3) {
+        positions[i] -= 0.05;
+        if (positions[i] < -10) positions[i] = 10;
+      }
+      snow.geometry.attributes.position.needsUpdate = true;
+
+      star.rotation.y += 0.02;
+
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    animate();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contact Me</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css?family=Lato|Courier+Prime');
+
+    :root {
+      --sidebar-width: 200px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Lato', sans-serif;
+      background: radial-gradient(circle at center, #111, #000);
+      color: #fff;
+      height: 100vh;
+      display: flex;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: var(--sidebar-width);
+      background-color: rgba(241, 241, 241, 0.9);
+      position: fixed;
+      height: 100%;
+      overflow: auto;
+      z-index: 5;
+    }
+
+    .sidebar a {
+      display: block;
+      color: black;
+      padding: 16px;
+      text-decoration: none;
+      font-size: 16px;
+    }
+
+    .sidebar a.active {
+      background-color: #04AA6D;
+      color: white;
+    }
+
+    .sidebar a:hover:not(.active) {
+      background-color: #555;
+      color: white;
+    }
+
+    /* Main content */
+    .content {
+      margin-left: var(--sidebar-width);
+      flex-grow: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .scene {
+      width: 200px;
+      height: 200px;
+      perspective: 600px;
+    }
+
+    .cube {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      animation: spin 20s infinite linear;
+    }
+
+    .face {
+      position: absolute;
+      width: 200px;
+      height: 200px;
+      background: rgba(0, 255, 255, 0.1);
+      border: 2px solid #0ff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 1rem;
+      text-align: center;
+      box-shadow: 0 0 20px #0ff;
+      font-family: 'Courier Prime', monospace;
+    }
+
+    .front  { transform: rotateY(  0deg) translateZ(100px); }
+    .back   { transform: rotateY(180deg) translateZ(100px); }
+    .right  { transform: rotateY( 90deg) translateZ(100px); }
+    .left   { transform: rotateY(-90deg) translateZ(100px); }
+    .top    { transform: rotateX( 90deg) translateZ(100px); }
+    .bottom { transform: rotateX(-90deg) translateZ(100px); }
+
+    @keyframes spin {
+      from { transform: rotateX(0deg) rotateY(0deg); }
+      to   { transform: rotateX(360deg) rotateY(360deg); }
+    }
+
+    /* Responsive tweaks */
+    @media screen and (max-width: 700px) {
+      .sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+      }
+
+      .sidebar a {
+        float: left;
+      }
+
+      .content {
+        margin-left: 0;
+        margin-top: 60px;
+      }
+    }
+
+    @media screen and (max-width: 400px) {
+      .sidebar a {
+        text-align: center;
+        float: none;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <a href="index.html">Home</a>
+    <a href="October.html">Learn About The Month.</a>
+    <a class="active" href="Contact.html">Contact Me</a>
+  </div>
+
+  <!-- Content -->
+  <div class="content">
+    <div class="scene">
+      <div class="cube">
+        <div class="face front">Email: agoodman@keystoneschool.org</div>
+        <div class="face back">GitHub: @agoodman-prog</div>
+        <div class="face left">Name: Asher</div>
+        <div class="face right">Minecraft: arustyguy200</div>
+        <div class="face top">Brawl Stars: arustyguy999</div>
+        <div class="face bottom">Location: San Antonio, TX</div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

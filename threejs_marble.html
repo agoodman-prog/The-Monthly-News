@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Three.js Marble — Spin with Mouse</title>
+  <style>
+    html,body{height:100%;margin:0;background:#111;color:#eee}
+    #app{width:100%;height:100%;display:block}
+    .help{position:absolute;left:12px;top:12px;padding:8px 12px;background:rgba(0,0,0,0.4);backdrop-filter:blur(4px);border-radius:8px;font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial}
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <div class="help">Drag to spin • Scroll to zoom • Double-click to reset</div>
+
+  <script type="module">
+    import * as THREE from 'https://unpkg.com/three@0.152.2/build/three.module.js';
+
+    // Scene + camera + renderer
+    const container = document.getElementById('app');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0d0d10);
+
+    const camera = new THREE.PerspectiveCamera(45, innerWidth/innerHeight, 0.1, 100);
+    camera.position.set(0, 0, 3.5);
+
+    const renderer = new THREE.WebGLRenderer({ antialias:true });
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    container.appendChild(renderer.domElement);
+
+    // Lights
+    const hemi = new THREE.HemisphereLight(0xffffff, 0x222244, 0.6);
+    scene.add(hemi);
+    const dir = new THREE.DirectionalLight(0xffffff, 0.8);
+    dir.position.set(5,5,5);
+    scene.add(dir);
+
+    // Create a marble-like texture using a canvas noise bump + color
+    function createMarbleCanvas(size=1024){
+      const c = document.createElement('canvas'); c.width = c.height = size;
+      const ctx = c.getContext('2d');
+
+      // base
+      ctx.fillStyle = '#bfbfc8';
+      ctx.fillRect(0,0,size,size);
+
+      // simple turbulence / marble by layering semi-transparent sine-warped noise lines
+      const stripes = 200;
+      for(let i=0;i<stripes;i++){
+        const a = i/stripes;
+        const x = Math.sin(a*10 + Math.random()*4) * size*0.2 + (size * a);
+        ctx.beginPath();
+        ctx.moveTo(x + Math.random()*6, 0);
+        for(let y=0;y<=size;y+=8){
+          const rx = x + Math.sin(y*0.02 + a*6 + Math.random()*2) * 18 * (1 - a);
+          ctx.lineTo(rx + Math.random()*4, y);
+        }
+        ctx.strokeStyle = `rgba(${40 + Math.floor(80*a)},${40 + Math.floor(80*a)},${40 + Math.floor(80*a)},${0.08 + 0.12*Math.random()})`;
+        ctx.lineWidth = 2 + Math.random()*4;
+        ctx.stroke();
+      }
+
+      // add subtle darker veins
+      ctx.globalCompositeOperation = 'multiply';
+      for(let i=0;i<30;i++){
+        ctx.beginPath();
+        ctx.moveTo(Math.random()*size, Math.random()*size);
+        for(let j=0;j<6;j++){
+          ctx.lineTo(Math.random()*size, Math.random()*size);
+        }
+        ctx.strokeStyle = 'rgba(30,30,35,0.18)';
+        ctx.lineWidth = 1 + Math.random()*2.5;
+        ctx.stroke();
+      }
+      ctx.globalCompositeOperation = 'source-over';
+
+      // make a slightly colored tint
+      const g = ctx.createLinearGradient(0,0,size,size);
+      g.addColorStop(0, 'rgba(220,220,230,0.06)');
+      g.addColorStop(1, 'rgba(200,210,235,0.06)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0,0,size,size);
+
+      return c;
+    }
+
+    const texCanvas = createMarbleCanvas(1024);
+    const texture = new THREE.CanvasTexture(texCanvas);
+    texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    texture.encoding = THREE.sRGBEncoding;
+
+    // Bump map from same canvas (grayscale) for extra detail
+    const bump = new THREE.CanvasTexture(texCanvas);
+    bump.needsUpdate = true;
+
+    // Marble material
+    const mat = new THREE.MeshPhysicalMaterial({
+      map: texture,
+      metalness: 0.0,
+      roughness: 0.15,
+      clearcoat: 0.6,
+      clearcoatRoughness: 0.05,
+      reflectivity: 0.7,
+      bumpMap: bump,
+      bumpScale: 0.06,
+    });
+
+    const sphereGeo = new THREE.SphereGeometry(1, 64, 64);
+    const marble = new THREE.Mesh(sphereGeo, mat);
+    scene.add(marble);
+
+    // subtle ground reflection using a large slightly reflective plane (fake by a blurred circle)
+    const groundGeo = new THREE.PlaneGeometry(12,12);
+    const groundMat = new THREE.MeshBasicMaterial({color:0x06060a, transparent:true, opacity:0.6});
+    const ground = new THREE.Mesh(groundGeo, groundMat);
+    ground.rotation.x = -Math.PI/2; ground.position.y = -1.4;
+    scene.add(ground);
+
+    // Interaction: spin the marble by dragging — with inertia
+    let dragging = false;
+    let lastX = 0, lastY = 0;
+    let velocityX = 0, velocityY = 0;
+    const damping = 0.95;
+
+    function getPointer(event){
+      if(event.touches) return {x: event.touches[0].clientX, y: event.touches[0].clientY};
+      return {x: event.clientX, y: event.clientY};
+    }
+
+    function onDown(e){
+      dragging = true;
+      const p = getPointer(e);
+      lastX = p.x; lastY = p.y;
+      velocityX = velocityY = 0;
+    }
+    function onMove(e){
+      if(!dragging) return;
+      const p = getPointer(e);
+      const dx = (p.x - lastX) / (innerWidth);
+      const dy = (p.y - lastY) / (innerHeight);
+
+      // rotate sphere — rotate about camera's up and right directions to feel natural
+      const quatX = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0), -dx * Math.PI);
+      const quatY = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1,0,0), -dy * Math.PI);
+      marble.quaternion.premultiply(quatX);
+      marble.quaternion.premultiply(quatY);
+
+      // store velocity for inertia
+      velocityX = dx * 60;
+      velocityY = dy * 60;
+
+      lastX = p.x; lastY = p.y;
+    }
+    function onUp(e){
+      dragging = false;
+    }
+
+    renderer.domElement.addEventListener('pointerdown', onDown);
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+    renderer.domElement.addEventListener('touchstart', onDown, {passive:true});
+    renderer.domElement.addEventListener('touchmove', onMove, {passive:true});
+    renderer.domElement.addEventListener('touchend', onUp, {passive:true});
+
+    // Zoom with wheel
+    window.addEventListener('wheel', (e)=>{
+      camera.position.z += e.deltaY * 0.0015;
+      camera.position.z = THREE.MathUtils.clamp(camera.position.z, 1.6, 10);
+    }, {passive:true});
+
+    // Double click to reset
+    renderer.domElement.addEventListener('dblclick', ()=>{
+      marble.quaternion.set(0,0,0,1);
+      camera.position.set(0,0,3.5);
+      velocityX = velocityY = 0;
+    });
+
+    // Animation loop
+    const clock = new THREE.Clock();
+    function animate(){
+      requestAnimationFrame(animate);
+
+      // apply inertia when not dragging
+      if(!dragging){
+        if(Math.abs(velocityX) > 0.0001 || Math.abs(velocityY) > 0.0001){
+          const quatX = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0), -velocityX * 0.016);
+          const quatY = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1,0,0), -velocityY * 0.016);
+          marble.quaternion.premultiply(quatX);
+          marble.quaternion.premultiply(quatY);
+          velocityX *= damping; velocityY *= damping;
+        }
+      }
+
+      // subtle slow rotation for life
+      marble.rotation.y += 0.0008;
+
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    // handle resize
+    window.addEventListener('resize', ()=>{
+      camera.aspect = innerWidth/innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(innerWidth, innerHeight);
+    });
+
+  </script>
+</body>
+</html>

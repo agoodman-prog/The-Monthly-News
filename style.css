@@ -1,0 +1,140 @@
+/* ------------------------------------
+   GLOBAL RESET & FONTS
+------------------------------------ */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* ------------------------------------
+   BODY + BACKGROUND
+------------------------------------ */
+body {
+  font-family: "Inter", sans-serif;
+  background: #f2f4f8;
+  color: #222;
+  overflow-x: hidden;
+  margin: 0;
+}
+
+/* ------------------------------------
+   SIDEBAR
+------------------------------------ */
+.sidebar {
+  width: 220px;
+  background: #ffffff;
+  position: fixed;
+  height: 100%;
+  border-right: 2px solid #e1e1e1;
+  padding-top: 20px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.05);
+  z-index: 10;
+}
+
+.sidebar a {
+  display: block;
+  padding: 14px 20px;
+  font-weight: 600;
+  color: #333;
+  text-decoration: none;
+  border-radius: 8px;
+  margin: 6px 12px;
+  transition: 0.2s;
+}
+
+.sidebar a:hover {
+  background: #1e73be;
+  color: white;
+}
+
+.sidebar a.active {
+  background: #04AA6D;
+  color: white;
+}
+
+/* ------------------------------------
+   MAIN CONTENT
+------------------------------------ */
+.content {
+  margin-left: 230px;
+  padding: 30px;
+  min-height: 100vh;
+}
+
+.content h1,
+.content h2,
+.content p {
+  text-align: left;
+  margin-bottom: 20px;
+}
+
+/* ------------------------------------
+   NICE PAGE HEADER TITLE
+------------------------------------ */
+.page-title {
+  font-size: 2.8rem;
+  font-weight: 700;
+  color: #1e73be;
+  margin-bottom: 10px;
+}
+
+.page-subtitle {
+  font-size: 1.2rem;
+  color: #444;
+  margin-bottom: 30px;
+}
+
+/* ------------------------------------
+   BUTTON STYLE (FOR 3D VIEWERS)
+------------------------------------ */
+.button {
+  background: #1e73be;
+  color: white;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: 0.2s;
+  display: inline-block;
+  margin: 10px 0;
+}
+
+.button:hover {
+  background: #155a8e;
+}
+
+/* ------------------------------------
+   RESPONSIVE LAYOUT
+------------------------------------ */
+@media (max-width: 700px) {
+  .sidebar {
+    width: 100%;
+    height: auto;
+    position: relative;
+    box-shadow: none;
+    border-right: none;
+  }
+
+  .sidebar a {
+    float: left;
+    margin: 6px;
+  }
+
+  .content {
+    margin-left: 0;
+    padding: 20px;
+  }
+}
+
+@media (max-width: 400px) {
+  .sidebar a {
+    float: none;
+    width: 100%;
+    text-align: center;
+  }
+}
